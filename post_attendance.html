@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Faculty Dashboard</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        color: white;
+        background: linear-gradient(270deg, #ff512f, #dd2476);
+        background-size: 400% 400%;
+        animation: gradientBG 8s ease infinite;
+        padding: 20px;
+    }
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    h2 {
+        margin-bottom: 20px;
+    }
+    button {
+        margin: 10px;
+        padding: 12px 20px;
+        font-size: 16px;
+        border: none;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: transform 0.2s;
+    }
+    button:hover {
+        transform: scale(1.05);
+    }
+    #attendanceForm {
+        margin-top: 20px;
+        background: rgba(0,0,0,0.3);
+        padding: 20px;
+        border-radius: 10px;
+        display: none;
+    }
+    select {
+        padding: 5px;
+        border-radius: 5px;
+        margin-left: 10px;
+    }
+    table {
+        margin: auto;
+        margin-top: 20px;
+        border-collapse: collapse;
+        background: rgba(0,0,0,0.2);
+    }
+    td, th {
+        border: 1px solid white;
+        padding: 8px 15px;
+    }
+</style>
+</head>
+<body>
+
+<h2>Faculty Dashboard</h2>
+<button onclick="showPostForm()">Post Attendance</button>
+<button onclick="viewAttendance()">View Attendance</button>
+
+<div id="attendanceForm">
+    <h3>Post Attendance</h3>
+    <form id="postForm">
+        <table>
+            <tr><th>Student Name</th><th>Status</th></tr>
+        </table>
+        <button type="submit">Submit Attendance</button>
+    </form>
+</div>
+
+<div id="viewSection" style="display:none;">
+    <h3>Attendance Records</h3>
+    <table id="attendanceTable">
+        <tr><th>Student</th><th>Status</th></tr>
+    </table>
+</div>
+
+<script>
+    const students = [
+        "Student 1","Student 2","Student 3","Student 4","Student 5",
+        "Student 6","Student 7","Student 8","Student 9","Student 10"
+    ];
+    let attendanceData = [];
+
+    function showPostForm() {
+        document.getElementById("attendanceForm").style.display = "block";
+        document.getElementById("viewSection").style.display = "none";
+        let table = document.querySelector("#postForm table");
+        table.innerHTML = "<tr><th>Student Name</th><th>Status</th></tr>";
+        students.forEach(stu => {
+            let row = `<tr>
+                <td>${stu}</td>
+                <td>
+                    <select name="${stu}">
+                        <option value="Present">Present</option>
+                        <option value="Absent">Absent</option>
+                    </select>
+                </td>
+            </tr>`;
+            table.innerHTML += row;
+        });
+    }
+
+    document.getElementById("postForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        attendanceData = [];
+        students.forEach(stu => {
+            let status = document.querySelector(`select[name="${stu}"]`).value;
+            attendanceData.push({ name: stu, status: status });
+        });
+        alert("Attendance Posted Successfully!");
+        document.getElementById("attendanceForm").style.display = "none";
+    });
+
+    function viewAttendance() {
+        document.getElementById("viewSection").style.display = "block";
+        document.getElementById("attendanceForm").style.display = "none";
+        let table = document.getElementById("attendanceTable");
+        table.innerHTML = "<tr><th>Student</th><th>Status</th></tr>";
+        attendanceData.forEach(record => {
+            let row = `<tr>
+                <td>${record.name}</td>
+                <td style="color:${record.status === 'Present' ? 'lightgreen' : 'red'};">
+                    ${record.status}
+                </td>
+            </tr>`;
+            table.innerHTML += row;
+        });
+    }
+</script>
+
+</body>
+</html>

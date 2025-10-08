@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Smart Attendance — Demo with Photos (client-side)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root{ --bg:#f4f6f9; --card:#fff; --accent:#2563eb; --muted:#6b7280; --ok:#16a34a; --bad:#ef4444; font-family:system-ui,Arial,Helvetica;}
+  body{margin:18px;background:var(--bg);color:#0f172a}
+  .wrap{max-width:1100px;margin:0 auto}
+  h1{margin:4px 0 8px 0}
+  .grid{display:grid;grid-template-columns:1fr 420px;gap:16px}
+  .card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.06)}
+  label{display:block;font-size:13px;color:var(--muted);margin-top:8px}
+  input,select,button{padding:10px;border-radius:8px;border:1px solid #e6e9ef;font-size:14px}
+  button{background:var(--accent);color:#fff;border:0;cursor:pointer}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid rgba(37,99,235,0.12)}
+  .students-list{max-height:260px;overflow:auto;margin-top:8px}
+  .student-row{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;border:1px solid #f1f5f9;margin-bottom:8px}
+  .student-row img{width:64px;height:64px;border-radius:8px;object-fit:cover}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{padding:8px;border-bottom:1px solid #eef2f7;text-align:left}
+  .present{color:var(--ok);font-weight:600}
+  .absent{color:var(--bad);font-weight:600}
+  .controls{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  video{border-radius:8px;background:#000;max-width:100%}
+  footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+  @media(max-width:860px){ .grid{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Smart Student Attendance — Demo (Photos embedded)</h1>
+  <p style="color:var(--muted);margin:4px 0 16px 0">Preloaded sample photos. Register new students or use camera to scan a photo shown on your screen/phone to mark attendance. (Client-side image-compare)</p>
+
+  <div class="grid">
+    <!-- Left column: register & students -->
+    <section class="card">
+      <h3 style="margin:0 0 8px 0">Register / Manage Students</h3>
+
+      <label>Registration No</label>
+      <input id="inpReg" placeholder="e.g. R2025-001">
+
+      <label>Section</label>
+      <select id="inpSection">
+        <option value="A">Section A</option>
+        <option value="B">Section B</option>
+        <option value="C">Section C</option>
+      </select>
+
+      <label>Photo (optional - use upload or preloaded examples below)</label>
+      <input id="inpPhoto" type="file" accept="image/*">
+
+      <div class="controls">
+        <button id="btnAdd">Add Student</button>
+        <button id="btnAddPre" class="ghost">Add sample set (A)</button>
+        <button id="btnClear" class="ghost">Clear All</button>
+      </div>
+
+      <h4 style="margin-top:14px;margin-bottom:8px">Registered students</h4>
+      <div class="students-list card" id="studentsList">
+        <!-- dynamic -->
+      </div>
+    </section>
+
+    <!-- Right column: camera and attendance -->
+    <section class="card">
+      <h3 style="margin:0 0 8px 0">Scan & Mark Attendance</h3>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">
+          <label>Filter section (optional)</label>
+          <select id="filterSection">
+            <option value="">All sections</option>
+            <option value="A">Section A</option>
+            <option value="B">Section B</option>
+            <option value="C">Section C</option>
+          </select>
+        </div>
+        <div style="min-width:160px">
+          <label>Match threshold</label>
+          <input id="threshold" type="number" min="1" max="255" value="60" title="Lower = stricter">
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <video id="video" autoplay muted playsinline width="320" height="240"></video>
+        </div>
+        <div>
+          <div style="background:#fafafa;border-radius:8px;padding:10px;height:240px;display:flex;flex-direction:column;justify-content:center;align-items:center">
+            <div id="lastResult">No scans yet</div>
+            <div style="margin-top:8px;color:var(--muted);font-size:13px">If a match is found, that student becomes <b class="present">Present</b>. Others will be <b class="absent">Absent</b>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls" style="margin-top:12px">
+        <button id="btnStart">Start Camera</button>
+        <button id="btnStop" class="ghost">Stop Camera</button>
+        <button id="btnScan">Scan & Mark Attendance</button>
+        <button id="btnExport" class="ghost">Export CSV</button>
+      </div>
+
+      <h4 style="margin-top:16px;margin-bottom:6px">Attendance Table</h4>
+      <div style="max-height:280px;overflow:auto">
+        <table id="tbl">
+          <thead><tr><th>Reg No</th><th>Section</th><th>Photo</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <footer>Client-only demo — for production use a backend + real face recognition (ask me and I'll add it).</footer>
+</div>
+
+<script>
+/* ========= Utility: create embedded SVG badge image for examples ========= */
+function makeBadgeSVG(reg, name, bg='#E6F0FF', fg='#0B3D91') {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'>
+    <rect width='100%' height='100%' fill='${bg}' rx='20'/>
+    <circle cx='160' cy='84' r='64' fill='${fg}' fill-opacity='0.12'/>
+    <text x='50%' y='58%' font-size='28' font-family='Arial' fill='${fg}' text-anchor='middle'>${name}</text>
+    <text x='50%' y='78%' font-size='20' font-family='Arial' fill='${fg}' text-anchor='middle'>${reg}</text>
+  </svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+/* ========== Application state: students in memory ========== 
+   student = { reg, section, photoDataUrl, status }
+*/
+let students = [];
+
+/* Preload a few sample students with embedded SVG photos */
+function preloadSamples(){
+  const sample = [
+    { reg:'R2025-001', name:'Aisha', section:'A' },
+    { reg:'R2025-002', name:'Bobby', section:'A' },
+    { reg:'R2025-003', name:'Chitra', section:'B' },
+    { reg:'R2025-004', name:'Deepak', section:'B' },
+    { reg:'R2025-005', name:'Esha', section:'C' }
+  ];
+  sample.forEach(s=>{
+    students.push({ reg: s.reg, section: s.section, photoDataUrl: makeBadgeSVG(s.reg, s.name), status:'Absent' });
+  });
+  renderStudentsList();
+  renderAttendanceTable();
+}
+
+/* ========== DOM helpers ========== */
+const $ = id => document.getElementById(id);
+function renderStudentsList(){
+  const container = $('studentsList');
+  if(students.length===0){ container.innerHTML = '<div style="color:var(--muted)">No students registered</div>'; return; }
+  container.innerHTML = students.map((st, idx)=>`
+    <div class="student-row" data-idx="${idx}">
+      <img src="${st.photoDataUrl}" alt="photo">
+      <div style="flex:1">
+        <div><strong>${st.reg}</strong> · <small style="color:var(--muted)">Section ${st.section}</small></div>
+        <div style="margin-top:6px"><button class="ghost" data-idx="${idx}" onclick="markPresentByIdx(${idx})">Mark Present (manual)</button></div>
+      </div>
+      <div style="text-align:right"><div class="${st.status==='Present'?'present':'absent'}">${st.status}</div></div>
+    </div>
+  `).join('');
+}
+
+/* ========== Add / Remove / Upload ========== */
+$('btnAdd').addEventListener('click', async ()=> {
+  const reg = $('inpReg').value.trim();
+  const sec = $('inpSection').value;
+  const file = $('inpPhoto').files[0];
+  if(!reg){ alert('Enter registration number'); return; }
+  let dataUrl = '';
+  if(file){
+    dataUrl = await fileToDataURL(file);
+  } else {
+    // if no upload, create a simple badge SVG image with reg as text
+    dataUrl = makeBadgeSVG(reg, reg);
+  }
+  students.push({ reg, section: sec || '', photoDataUrl: dataUrl, status: 'Absent' });
+  $('inpReg').value=''; $('inpPhoto').value=''; $('inpSection').value='A';
+  renderStudentsList();
+  renderAttendanceTable();
+});
+
+$('btnAddPre').addEventListener('click', ()=>{ preloadSamples(); });
+
+$('btnClear').addEventListener('click', ()=>{ if(confirm('Clear all registered students?')){ students=[]; renderStudentsList(); renderAttendanceTable(); } });
+
+function fileToDataURL(file){
+  return new Promise((resolve, reject)=>{
+    const r = new FileReader();
+    r.onload = ()=> resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+/* Manual helper to mark present for testing */
+function markPresentByIdx(i){
+  students[i].status = 'Present';
+  renderStudentsList();
+  renderAttendanceTable();
+}
+
+/* ========== Camera handling ========== */
+let stream = null;
+const video = $('video');
+
+$('btnStart').addEventListener('click', async ()=>{
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ video: { width:640, height:480 }, audio:false });
+    video.srcObject = stream;
+    await video.play();
+  }catch(err){ alert('Camera error: '+ err.message); }
+});
+$('btnStop').addEventListener('click', ()=> {
+  if(stream){
+    stream.getTracks().forEach(t=>t.stop());
+    stream = null;
+    video.srcObject = null;
+  }
+});
+
+/* ========== Image compare: resize both images to small grayscale and compute mean absolute difference ==========
+   Lower diff = more similar. We compute difference per pixel on 1 channel (grayscale).
+   threshold input is 1..255 (lower => stricter match). We'll compute mean diff and compare to threshold.
+*/
+function imageToGrayArray(imgOrCanvas, size=80){
+  // returns Uint8ClampedArray length size*size grayscale
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(imgOrCanvas, 0, 0, size, size);
+  const data = ctx.getImageData(0,0,size,size).data;
+  const gray = new Uint8ClampedArray(size*size);
+  for(let i=0, j=0; i<data.length; i+=4, j++){
+    // simple luminosity
+    gray[j] = Math.round(0.21*data[i] + 0.72*data[i+1] + 0.07*data[i+2]);
+  }
+  return gray;
+}
+
+function meanAbsDiff(arrA, arrB){
+  if(arrA.length !== arrB.length) throw new Error('size mismatch');
+  let sum=0;
+  for(let i=0;i<arrA.length;i++){
+    sum += Math.abs(arrA[i]-arrB[i]);
+  }
+  return sum / arrA.length; // 0..255
+}
+
+/* compare captured frame vs stored student photoDataUrl -> return mean diff */
+async function compareCapturedToDataURL(capturedCanvas, dataUrl){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const a = imageToGrayArray(capturedCanvas, 80);
+      const b = imageToGrayArray(img, 80);
+      const diff = meanAbsDiff(a,b);
+      resolve(diff);
+    };
+    img.onerror = ()=> resolve(999);
+    img.src = dataUrl;
+  });
+}
+
+/* capture current frame into a canvas */
+function captureFrameCanvas(){
+  if(!video || video.readyState < 2) throw new Error('Camera not ready');
+  const c = document.createElement('canvas');
+  c.width = video.videoWidth || 640;
+  c.height = video.videoHeight || 480;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(video, 0, 0, c.width, c.height);
+  return c;
+}
+
+/* ========== Scan & mark attendance ========= */
+$('btnScan').addEventListener('click', async ()=>{
+  if(students.length===0){ alert('No registered students'); return; }
+  if(!video || video.readyState < 2){ alert('Start camera first'); return; }
+
+  const filterSection = $('filterSection').value;
+  const threshold = Number($('threshold').value) || 60; // mean diff threshold; lower => stricter
+
+  // Capture frame once
+  const capturedCanvas = captureFrameCanvas();
+
+  // For each student (respecting section filter) compare
+  const diffs = await Promise.all(students.map(s => compareCapturedToDataURL(capturedCanvas, s.photoDataUrl)));
+  // find best match among allowed students
+  let bestIdx = -1, bestVal = Infinity;
+  for(let i=0;i<students.length;i++){
+    if(filterSection && students[i].section !== filterSection) continue;
+    if(diffs[i] < bestVal){ bestVal = diffs[i]; bestIdx = i; }
+  }
+
+  // Determine matches: we use threshold
+  if(bestIdx === -1 || bestVal > threshold){
+    // no match found
+    students.forEach(s => s.status = 'Absent');
+    $('lastResult').innerHTML = `<div style="color:var(--bad)"><strong>No match (min diff ${bestVal.toFixed(2)}) — all marked Absent</strong></div>`;
+  } else {
+    // mark matched student present, others absent (we respect section filter: if filter set, only students in that section are considered; but mark all outside filter absent)
+    const matched = students[bestIdx];
+    students.forEach((s, idx) => {
+      if(filterSection){
+        if(s.section === filterSection && idx === bestIdx) s.status='Present';
+        else s.status='Absent';
+      } else {
+        if(idx === bestIdx) s.status='Present'; else s.status='Absent';
+      }
+    });
+    $('lastResult').innerHTML = `<div style="color:var(--ok)"><strong>Matched ${matched.reg} (diff ${bestVal.toFixed(2)}) — marked Present</strong></div>`;
+  }
+
+  renderStudentsList();
+  renderAttendanceTable();
+});
+
+/* ========== Render attendance table ========= */
+function renderAttendanceTable(){
+  const tbody = document.querySelector('#tbl tbody');
+  tbody.innerHTML = students.map(s => `
+    <tr>
+      <td>${s.reg}</td>
+      <td>${s.section}</td>
+      <td><img src="${s.photoDataUrl}" width="52" style="border-radius:6px"></td>
+      <td class="${s.status === 'Present' ? 'present' : 'absent'}">${s.status}</td>
+    </tr>
+  `).join('');
+}
+
+/* ========== Export CSV ========= */
+$('btnExport').addEventListener('click', ()=>{
+  if(students.length===0){ alert('No data'); return; }
+  const rows = [['RegNo','Section','Status']];
+  students.forEach(s => rows.push([s.reg, s.section, s.status]));
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `attendance_${(new Date()).toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
+});
+
+/* Initialize with 3 sample students for convenient demo */
+preloadSamples(); renderStudentsList(); renderAttendanceTable();
+</script>
+</body>
+</html>

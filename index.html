@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Portal</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            height: 60px;
+            background: linear-gradient(to right, #4a90e2, #5cb85c);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        iframe {
+            border: none;
+        }
+        #menu {
+            width: 20%;
+            height: calc(100vh - 60px);
+            background-color: #333;
+            color: white;
+        }
+        #content {
+            width: 80%;
+            height: calc(100vh - 60px);
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    Attendance Management System
+</header>
+
+<div style="display: flex;">
+    <iframe src="menu.html" id="menu"></iframe>
+    <iframe src="login.html" id="content" name="mainFrame"></iframe>
+</div>
+
+</body>
+</html>

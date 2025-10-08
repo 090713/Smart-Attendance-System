@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>View Attendance</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    body {
+        font-family: Arial;
+        text-align: center;
+        padding: 20px;
+        background: linear-gradient(120deg, #f093fb, #f5576c);
+        color: white;
+    }
+    canvas {
+        max-width: 400px;
+        margin: auto;
+    }
+</style>
+</head>
+<body>
+<h2>Attendance Overview</h2>
+<canvas id="attendanceChart"></canvas>
+<script>
+const ctx = document.getElementById('attendanceChart');
+new Chart(ctx, {
+    type: 'pie',
+    data: {
+        labels: ['Present', 'Absent'],
+        datasets: [{
+            data: [85, 15],
+            backgroundColor: ['#4caf50', '#f44336']
+        }]
+    }
+});
+</script>
+</body>
+</html>

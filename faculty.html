@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Faculty Dashboard</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        text-align: center;
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        color: white;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    h2 {
+        margin-bottom: 30px;
+        font-size: 2em;
+    }
+
+    .btn {
+        margin: 10px;
+        padding: 15px 30px;
+        font-size: 18px;
+        color: white;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(5px);
+    }
+
+    .btn:hover {
+        background: rgba(255, 255, 255, 0.4);
+        transform: scale(1.05);
+    }
+</style>
+</head>
+<body>
+
+<h2>Faculty Dashboard</h2>
+
+<button class="btn" onclick="window.location.href='update_attendance.html'">Update Attendance</button>
+<button class="btn" onclick="window.location.href='post_attendance.html'">Post Attendance</button>
+<button class="btn" onclick="window.location.href='facerecognition.html'">Face Recognition</button>
+
+</body>
+</html>

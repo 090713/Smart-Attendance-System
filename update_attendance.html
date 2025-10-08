@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Update Attendance</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(120deg, #f6d365, #fda085);
+        padding: 20px;
+        color: white;
+        text-align: center;
+    }
+    table {
+        width: 80%;
+        margin: auto;
+        border-collapse: collapse;
+    }
+    table, th, td {
+        border: 1px solid white;
+        padding: 10px;
+    }
+    button {
+        margin-top: 20px;
+        padding: 10px 20px;
+        font-size: 16px;
+        background: #ff7e5f;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        color: white;
+    }
+</style>
+</head>
+<body>
+<h2>Update Attendance</h2>
+<table>
+    <tr><th>Roll No</th><th>Name</th><th>Present</th></tr>
+</table>
+<button onclick="saveAttendance()">Save Attendance</button>
+
+<script>
+const students = [
+    "vindya", "mahitha", "meghana", "john", "David",
+    "Sophia", "Chris", "Emma", "Daniel", "Olivia"
+];
+
+const table = document.querySelector("table");
+students.forEach((name, index) => {
+    const row = `<tr>
+        <td>${index + 1}</td>
+        <td>${name}</td>
+        <td><input type="checkbox"></td>
+    </tr>`;
+    table.innerHTML += row;
+});
+
+function saveAttendance() {
+    alert("Attendance updated successfully!");
+}
+</script>
+
+</body>
+</html>
